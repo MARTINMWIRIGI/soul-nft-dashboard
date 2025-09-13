@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SoulInternet NFT Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #1e3c72, #2a5298);
+      color: white;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: rgba(0,0,0,0.3);
+    }
+    nav h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    nav .status {
+      font-size: 0.9rem;
+    }
+    section {
+      padding: 3rem 1rem;
+    }
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    h3 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      font-weight: normal;
+    }
+    .card {
+      background: linear-gradient(145deg, #3a7bd5, #00d2ff);
+      border: 2px solid white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1rem auto;
+      max-width: 400px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    }
+    input, button {
+      padding: 0.7rem;
+      margin: 0.5rem 0;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      background: white;
+      color: #2a5298;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <h1>SoulInternet NFT</h1>
+    <div class="status" id="status">Disconnected</div>
+  </nav>
+
+  <section id="hero">
+    <h2>Welcome to the SoulInternet NFT Dashboard</h2>
+    <h3>Mint and manage NFTs directly from your browser</h3>
+    <p>Secure. Decentralized. Yours forever.</p>
+  </section>
+
+  <section id="upload">
+    <h2>Upload Your NFT</h2>
+    <h3>Choose a file to store on IPFS via NFT.storage</h3>
+    <p>Once uploaded, you’ll receive an IPFS link to use as your NFT metadata.</p>
+    <div class="card">
+      <form id="uploadForm">
+        <input type="file" id="fileInput" required />
+        <button type="submit">Upload to IPFS</button>
+      </form>
+      <p id="uploadResult"></p>
+    </div>
+  </section>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files.length) return;
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        document.getElementById("uploadResult").innerText = 
+          data.error ? "Upload failed: " + data.error : "Uploaded! CID: " + data.cid;
+      } catch (err) {
+        document.getElementById("uploadResult").innerText = "Upload failed: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

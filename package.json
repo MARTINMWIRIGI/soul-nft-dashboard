@@ -1,0 +1,8 @@
+{
+  "name": "soulinternet-nft-dashboard",
+  "version": "1.0.0",
+  "dependencies": {
+    "nft.storage": "^7.0.3",
+    "busboy": "^1.6.0"
+  }
+}
