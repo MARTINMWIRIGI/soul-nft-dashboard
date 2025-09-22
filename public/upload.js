@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     });
 
     bb.on('close', async () => {
-      const nftstorage = new NFTStorage({ token: process.env.NFT_STORAGE_KEY });
+      const nftstorage = new NFTStorage({ token: process.env.e45adb75.7c576e66ce6d497d853b61f4645f9039 });
       const fileBuffer = Buffer.concat(chunks);
       const file = new File([fileBuffer], 'upload.png', { type: 'image/png' });
       const cid = await nftstorage.storeBlob(file);
