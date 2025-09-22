@@ -397,7 +397,190 @@ async function mintSnapshotNFT() {
     
     <!-- Facial Recognition -->
 
+<!-- Facial Recognition -->
+<div class="card" style="padding:20px; background:#1a1a1a; color:white; border-radius:12px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.5); position:relative;">
+  <h2 style="color:#4CAF50; margin-bottom:12px;">Facial Recognition</h2>
 
+  <!-- Video Feed -->
+  <video id="video" width="100%" height="240" autoplay muted playsinline
+    style="border:2px solid #4CAF50; border-radius:10px; margin-bottom:12px;">
+  </video>
+
+  <!-- Overlay Canvas -->
+  <canvas id="overlay" width="320" height="240"
+    style="position:absolute; left:50%; transform:translateX(-50%); top:80px; display:none;">
+  </canvas>
+
+  <!-- Status -->
+  <p id="scan-status" style="font-size:14px; color:#ccc; margin:8px 0;">Press start to scan</p>
+
+  <!-- Start Button -->
+  <button onclick="startFace()" 
+    style="background:#4CAF50; color:white; padding:10px 18px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin:5px;">
+    ▶ Start Scan
+  </button>
+
+  <!-- Mint Button -->
+  <button id="mint-btn" onclick="mintFaceNFT()" disabled
+    style="background:#2196F3; color:white; padding:10px 18px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin:5px; opacity:0.6;">
+    🪙 Mint Face NFT
+  </button>
+
+  <!-- Mint Preview -->
+  <div id="mint-preview" style="margin-top:15px; display:none; text-align:center;">
+    <h3 style="color:#4CAF50; margin-bottom:8px;">Minted Face NFT</h3>
+    <a id="mint-link" href="#" target="_blank" style="text-decoration:none;">
+      <img id="mint-image" src="" alt="Minted Face" style="max-width:100%; border:2px solid #2196F3; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+    </a>
+  </div>
+</div>
+
+<!-- Face API Script -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+<script>
+let lastFaceCapture = null;
+
+async function startFace() {
+  const status = document.getElementById('scan-status');
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const mintBtn = document.getElementById('mint-btn');
+
+  try {
+    status.innerText = "Loading models...";
+
+    const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+
+    status.innerText = "Models loaded ✅ Starting camera...";
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+    video.srcObject = stream;
+
+    video.onplaying = () => {
+      overlay.style.display = "block";
+      overlay.width = video.videoWidth;
+      overlay.height = video.videoHeight;
+      runDetection(video, overlay, status, mintBtn);
+    };
+
+  } catch (err) {
+    status.innerText = "⚠ Error: " + err;
+  }
+}
+
+async function runDetection(video, overlay, status, mintBtn) {
+  const displaySize = { width: video.videoWidth, height: video.videoHeight };
+  faceapi.matchDimensions(overlay, displaySize);
+
+  setInterval(async () => {
+    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+
+    const resized = faceapi.resizeResults(detections, displaySize);
+
+    const context = overlay.getContext('2d');
+    context.clearRect(0, 0, overlay.width, overlay.height);
+
+    faceapi.draw.drawDetections(overlay, resized);
+    faceapi.draw.drawFaceLandmarks(overlay, resized);
+
+    if (detections.length > 0) {
+      status.innerText = `Detected ${detections.length} face(s) 👤`;
+
+      // Capture snapshot
+      const snapshotCanvas = document.createElement("canvas");
+      snapshotCanvas.width = video.videoWidth;
+      snapshotCanvas.height = video.videoHeight;
+      snapshotCanvas.getContext("2d").drawImage(video, 0, 0);
+      lastFaceCapture = snapshotCanvas.toDataURL("image/png");
+
+      // Enable Mint button
+      mintBtn.disabled = false;
+      mintBtn.style.opacity = 1;
+    } else {
+      status.innerText = "No face detected...";
+      mintBtn.disabled = true;
+      mintBtn.style.opacity = 0.6;
+    }
+  }, 1000);
+}
+
+async function mintFaceNFT() {
+  if (!lastFaceCapture) {
+    alert("No face scan available to mint!");
+    return;
+  }
+
+  const status = document.getElementById('scan-status');
+  const mintPreview = document.getElementById('mint-preview');
+  const mintImage = document.getElementById('mint-image');
+  const mintLink = document.getElementById('mint-link');
+
+  status.innerText = "Uploading face scan to IPFS...";
+
+  try {
+    // Convert Base64 to Blob
+    const blob = await (await fetch(lastFaceCapture)).blob();
+
+    // Upload to NFT.Storage
+    const nftResponse = await fetch("https://api.nft.storage/upload", {
+      method: "POST",
+      headers: { "Authorization": "Bearer e45adb75.7c576e66ce6d497d853b61f4645f9039" },
+      body: blob
+    });
+
+    const nftData = await nftResponse.json();
+    const ipfsUrl = `https://ipfs.io/ipfs/${nftData.value.cid}`;
+
+    status.innerText = "✅ Uploaded to IPFS: " + ipfsUrl;
+
+    // Show preview
+    mintImage.src = ipfsUrl;
+    mintLink.href = ipfsUrl;
+    mintPreview.style.display = "block";
+
+    // Mint using Web3
+    if (typeof window.ethereum !== "undefined") {
+      const web3 = new Web3(window.ethereum);
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+
+      const contractAddress = "0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3"; // Your Vault contract
+      const contributorAddress = "0x4df55fad5af6ce9238d5d43f1589bc52cbea7b82"; // Contributor
+
+      const abi = [
+        {
+          "inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"uri","type":"string"}],
+          "name":"safeMint",
+          "outputs":[],
+          "stateMutability":"nonpayable",
+          "type":"function"
+        }
+      ];
+
+      const contract = new web3.eth.Contract(abi, contractAddress);
+      const accounts = await web3.eth.getAccounts();
+
+      await contract.methods.safeMint(contributorAddress, ipfsUrl).send({ from: accounts[0] });
+      status.innerText = "🎉 Face NFT minted successfully!";
+    } else {
+      status.innerText = "⚠ Please install MetaMask to mint.";
+    }
+
+  } catch (err) {
+    status.innerText = "⚠ Minting error: " + err;
+  }
+}
+</script>
+    
   
 
 
