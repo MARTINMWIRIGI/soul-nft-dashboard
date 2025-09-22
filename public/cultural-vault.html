@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cultural & Linguistic Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@nftstorage/nft-storage/dist/bundle.esm.min.js" type="module"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fdfdfd;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    h1 { font-size: 1.6rem; margin: 0; }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: .5rem;
+      text-align: center;
+    }
+    .card button, .card input {
+      margin-top: .5rem;
+      padding: .6rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #0077ff;
+      color: #fff;
+      cursor: pointer;
+      font-size: .9rem;
+    }
+    .card button:hover { background: #005fcc; }
+    video, audio {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: .5rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: .8rem;
+      background: #f1f1f1;
+    }
+    /* Mobile adjustments */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.3rem; }
+      .card h2 { font-size: 1rem; }
+      .card button { font-size: .8rem; padding: .5rem .8rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cultural & Linguistic Vault</h1>
+    <p>Preserve languages, traditions, and heritage on-chain</p>
+  </header>
+
+  <div class="container">
+    <!-- Facial Recognition -->
+    <div class="card">
+      <h2>Facial Recognition</h2>
+      <video id="video" autoplay muted></video>
+      <button onclick="startFace()">Start Scan</button>
+    </div>
+
+    <!-- Steps Recording -->
+    <div class="card">
+      <h2>Steps Recording</h2>
+      <button onclick="startVideoRecord()">Record Dance</button>
+      <video id="danceVideo" controls></video>
+    </div>
+
+    <!-- Voice Recognition -->
+    <div class="card">
+      <h2>Voice Recording</h2>
+      <button onclick="startAudio()">Record Voice</button>
+      <audio id="audioPlay" controls></audio>
+    </div>
+
+    <!-- Document Upload -->
+    <div class="card">
+      <h2>Upload Document</h2>
+      <input type="file" id="docUpload">
+      <button onclick="uploadDoc()">Upload & Mint</button>
+    </div>
+  </div>
+
+  <footer>
+    Contributor: 0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3 · Vault Contract: 0x4df55fad5af6ce9238d5d43f1589bc52cbea7b82
+  </footer>
+
+  <script type="module">
+    import { NFTStorage, File } from "https://cdn.jsdelivr.net/npm/@nftstorage/nft-storage/dist/bundle.esm.min.js";
+    
+    const NFT_STORAGE_KEY = "e45adb75.7c576e66ce6d497d853b61f4645f9039";
+    const CONTRACT_ADDRESS = "0x4df55fad5af6ce9238d5d43f1589bc52cbea7b82";
+    const CONTRIBUTOR = "0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3";
+
+    // === FACE RECOGNITION ===
+    async function startFace() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+      const video = document.getElementById('video');
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream);
+      video.addEventListener('play', () => {
+        const canvas = faceapi.createCanvasFromMedia(video);
+        document.body.append(canvas);
+        setInterval(async () => {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+          faceapi.draw.drawDetections(canvas, detections);
+        }, 200);
+      });
+    }
+
+    // === VIDEO RECORD ===
+    let vidRecorder, vidChunks = [];
+    function startVideoRecord() {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        vidRecorder = new MediaRecorder(stream);
+        vidRecorder.ondataavailable = e => vidChunks.push(e.data);
+        vidRecorder.onstop = () => {
+          const blob = new Blob(vidChunks, { type: 'video/mp4' });
+          document.getElementById('danceVideo').src = URL.createObjectURL(blob);
+          vidChunks = [];
+        };
+        vidRecorder.start();
+        setTimeout(() => vidRecorder.stop(), 5000);
+      });
+    }
+
+    // === AUDIO RECORD ===
+    let audRecorder, audChunks = [];
+    function startAudio() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        audRecorder = new MediaRecorder(stream);
+        audRecorder.ondataavailable = e => audChunks.push(e.data);
+        audRecorder.onstop = () => {
+          const blob = new Blob(audChunks, { type: 'audio/mp3' });
+          document.getElementById('audioPlay').src = URL.createObjectURL(blob);
+          audChunks = [];
+        };
+        audRecorder.start();
+        setTimeout(() => audRecorder.stop(), 4000);
+      });
+    }
+
+    // === DOCUMENT UPLOAD + NFT ===
+    async function uploadDoc() {
+      const fileInput = document.getElementById('docUpload');
+      if (!fileInput.files.length) return alert("Upload a file first!");
+      const file = fileInput.files[0];
+
+      const client = new NFTStorage({ token: NFT_STORAGE_KEY });
+      const metadata = await client.store({
+        name: file.name,
+        description: "Cultural Document Upload",
+        image: new File([file], file.name, { type: file.type })
+      });
+
+      alert("Uploaded to IPFS: " + metadata.url);
+      await mintNFT(metadata.url);
+    }
+
+    async function mintNFT(tokenURI) {
+      if (!window.ethereum) return alert("Please install MetaMask");
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const abi = [
+        "function safeMint(address to, string memory uri) public"
+      ];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+      const tx = await contract.safeMint(CONTRIBUTOR, tokenURI);
+      await tx.wait();
+      alert("NFT Minted successfully!");
+    }
+
+    // expose funcs
+    window.startFace = startFace;
+    window.startVideoRecord = startVideoRecord;
+    window.startAudio = startAudio;
+    window.uploadDoc = uploadDoc;
+  </script>
+</body>
+  </html>
+  
