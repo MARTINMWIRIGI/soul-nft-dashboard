@@ -243,7 +243,10 @@ async function startFaceScan() {
 
 
 // GitHub weights
-      const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+      
+  
+  
+const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
 
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -253,54 +256,46 @@ async function startFaceScan() {
 
       status.innerText = "Models loaded ✅ Starting camera...";
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const context = overlay.getContext('2d');
+
+  navigator.mediaDevices.getUserMedia({ video: {} })
+    .then(stream => {
+      streamRef = stream;
       video.srcObject = stream;
+      status.innerText = "Scanning...";
+      status.style.color = "#2196F3";
+    })
+    .catch(err => {
+      status.innerText = "Camera access denied";
+      status.style.color = "#f44336";
+    });
 
-      video.onplaying = () => {
-        overlay.style.display = "block";
-        overlay.width = video.videoWidth;
-        overlay.height = video.videoHeight;
-        runDetection();
-      };
-
-    } catch (err) {
-      status.innerText = "⚠ Error: " + err;
-    }
-  }
-
-  async function runDetection() {
-    const displaySize = { width: video.videoWidth, height: video.videoHeight };
-    faceapi.matchDimensions(overlay, displaySize);
-
-    setInterval(async () => {
+  video.addEventListener('playing', () => {
+    if (scanInterval) clearInterval(scanInterval);
+    scanInterval = setInterval(async () => {
       const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptors();
-
-      const resized = faceapi.resizeResults(detections, displaySize);
-
-      const context = overlay.getContext('2d');
+        .withFaceLandmarks();
       context.clearRect(0, 0, overlay.width, overlay.height);
 
-      faceapi.draw.drawDetections(overlay, resized);
-      faceapi.draw.drawFaceLandmarks(overlay, resized);
-
       if (detections.length > 0) {
-        faceDetected = true;
-        status.innerText = `Detected ${detections.length} face(s) 👤`;
+        context.strokeStyle = "#4CAF50";
+        context.lineWidth = 2;
+        detections.forEach(det => {
+          const box = det.detection.box;
+          context.strokeRect(box.x, box.y, box.width, box.height);
+        });
+        status.innerText = "Face Detected!";
+        status.style.color = "#4CAF50";
       } else {
-        faceDetected = false;
-        status.innerText = "No face detected...";
+        status.innerText = "No Face Found";
+        status.style.color = "#f44336";
       }
-    }, 500);
+    }, 200);
+  });
   }
-//
-  //
-  //
   
-
-  //
-  //
 
 // Stop Scan
 function stopFaceScan() {
