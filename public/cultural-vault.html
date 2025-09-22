@@ -221,6 +221,18 @@ async function connectWallet() {
 }
 </style>
 
+    <!-- Facial Recognition Logic -->
+<script>
+window.onload = function() {
+  const status = document.getElementById('scan-status');
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  let faceDetected = false;
+
+  async function startFace() {
+    try {
+      status.innerText = "Loading models...";
+
 <!-- Face API + Ethers.js -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
@@ -240,8 +252,61 @@ async function startFaceScan() {
   status.style.color = "#FF9800";
 
 
+// GitHub weights
+      const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
 
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+      ]);
 
+      status.innerText = "Models loaded ✅ Starting camera...";
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+      video.srcObject = stream;
+
+      video.onplaying = () => {
+        overlay.style.display = "block";
+        overlay.width = video.videoWidth;
+        overlay.height = video.videoHeight;
+        runDetection();
+      };
+
+    } catch (err) {
+      status.innerText = "⚠ Error: " + err;
+    }
+  }
+
+  async function runDetection() {
+    const displaySize = { width: video.videoWidth, height: video.videoHeight };
+    faceapi.matchDimensions(overlay, displaySize);
+
+    setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      const resized = faceapi.resizeResults(detections, displaySize);
+
+      const context = overlay.getContext('2d');
+      context.clearRect(0, 0, overlay.width, overlay.height);
+
+      faceapi.draw.drawDetections(overlay, resized);
+      faceapi.draw.drawFaceLandmarks(overlay, resized);
+
+      if (detections.length > 0) {
+        faceDetected = true;
+        status.innerText = `Detected ${detections.length} face(s) 👤`;
+      } else {
+        faceDetected = false;
+        status.innerText = "No face detected...";
+      }
+    }, 500);
+  }
+//
+  //
+  //
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   
 
@@ -288,6 +353,9 @@ await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     }, 200);
   });
 }
+
+  //
+  //
 
 // Stop Scan
 function stopFaceScan() {
