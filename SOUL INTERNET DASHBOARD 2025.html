@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soul Internet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 768px;
+  margin: 0 auto;
+  background-color: white;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: white;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.divider {
+  color: #999;
+  margin: 0 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.language {
+  font-size: 14px;
+  color: #666;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #666;
+}
+
+.menu-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Hero Section */
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  color: white;
+  padding: 40px 20px;
+  margin: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 60%;
+}
+
+.hero h1 {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.hero p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.learn-more-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.learn-more-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hero-visual {
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 200px;
+  height: 200px;
+}
+
+.spiral-gradient {
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 0deg,
+    #ff6b6b,
+    #4ecdc4,
+    #45b7d1,
+    #96ceb4,
+    #feca57,
+    #ff9ff3,
+    #54a0ff,
+    #ff6b6b
+  );
+  border-radius: 50%;
+  animation: rotate 10s linear infinite;
+  filter: blur(1px);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: white;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* Models Section */
+.models-section {
+  padding: 40px 20px;
+}
+
+.models-section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #333;
+}
+
+.models-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 640px) {
+  .models-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.model-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+.mint-model-card {
+  background: black;
+  border-radius: 10px;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.model-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.model-preview {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+}
+
+.model-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.model-preview.dark {
+  background: #1a1a1a;
+}
+
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.play-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.model-info {
+  padding: 20px;
+}
+
+.model-info h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.model-info p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.model-type {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+}
+
+.arrow-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: #666;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.model-card:hover .arrow-icon {
+  opacity: 1;
+  transform: translate(4px, -4px);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .hero {
+    margin: 16px;
+    padding: 32px 20px;
+    min-height: 240px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .hero-content {
+    max-width: 70%;
+  }
+
+  .hero-visual {
+    width: 150px;
+    height: 150px;
+    right: -30px;
+  }
+
+  .models-section {
+    padding: 32px 16px;
+  }
+
+  .models-section h2 {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 1200px;
+  }
+
+  .hero {
+    margin: 24px;
+    padding: 60px 40px;
+    min-height: 320px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .hero-content {
+    max-width: 50%;
+  }
+
+  .hero-visual {
+    width: 250px;
+    height: 250px;
+    right: -40px;
+  }
+
+  .models-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .models-section {
+    padding: 60px 40px;
+  }
+  
+  .footer { padding:12px;
+  text-align:center;
+    color:rgba(230,240,255,0.6);
+  }
+  .input { padding:8px;
+  border-radius:8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    color: #eaf2ff; width:100%;
+  }
+  .button { background:linear-gradient(90deg,#00e6d9,#7c3aed);
+    color:#00121a;
+    padding:8px 12px;
+    border-radius:29px;
+    font-weight:700;
+    border:none;
+    cursor:pointer;
+  }
+.card { background:linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.006));
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  padding:16px; }
+}
+</style>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" fill="currentColor"/>
+          <rect x="14" y="3" width="7" height="7" fill="currentColor"/>
+          <rect x="3" y="14" width="7" height="7" fill="currentColor"/>
+          <rect x="14" y="14" width="7" height="7" fill="currentColor"/>
+        </svg>
+        <span>Soul Internet</span>
+      </div>
+      <div class="header-right">
+        <span class="language">WALLET</span>
+        <button class="menu-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1>Redefining the Digital Experience</h1>
+        <p>We merge cutting-edge blockchain technology, intelligent AI, and immersive web tools to create a seamless digital ecosystem. From secure NFT vaults and decentralized applications to smart integrations like voice, vision, and health data layers, we empower you to own, control, and expand your digital presence like never before.</p>
+        <button class="learn-more-btn">Learn More</button>
+      </div>
+      <div class="hero-visual">
+        <div class="spiral-gradient"></div>
+      </div>
+      <div class="carousel-dots">
+        <span class="dot"></span>
+        <span class="dot active"></span>
+        <span class="dot"></span>
+      </div>
+    </section>
+
+    <!-- Models Section -->
+    <section class="models-section">
+      <h2>General Concept of Vaults</h2>
+      <p>Vaults in Soul Internet are secure, blockchain-powered containers that hold personal, cultural, or community-driven digital assets. Each vault combines NFTs, data layers (voice, biometrics, movement, etc.), and decentralized identity tools to create a living record of human experience and contribution.
+        <br><br>
+They are interoperable across the ecosystem but each serves a unique purpose — from preserving heritage, securing identities, powering climate action, to creating legacy capsules for future generations.</p>
+      <br><br><br>
+      
+      <div class="models-grid">
+        
+        <!-- Cultural & Linguistic Vault -->
+        <div class="model-card">
+          <div class="model-preview">
+            <img src="https://dummyimage.com/320x180/2a2a2a/ffffff?text=Cultural+Linguistics" alt="Cultural Linguistics" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Cultural & Linguistic Vault</h3>
+            <p>A digital sanctuary preserving languages, traditions, stories, and cultural heritage in an immutable way. By tokenizing oral histories, local dialects, and cultural expressions, this vault safeguards knowledge for future generations.</p>
+            <span class="model-type">LAYERS : 
+             
+              → Facial Recognition
+              → Record cultural expressions, dances, and attires
+              → Steps Recording
+              → Capture traditional dances and rituals
+              → Voice Recognition
+              → Preserve spoken dialects and accents
+              → Document Uploads
+              → NFT Minting
+            </span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Smart Carbon Credits Vault -->
+        <div class="model-card">
+          <div class="model-preview dark">
+            <img src="https://dummyimage.com/320x180/1a1a1a/ffffff?text=Smart+Carbon+Credits" alt="Smart Carbon Credits" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Smart Carbon Credits Vault</h3>
+            <p>A sustainability-driven vault that tracks, verifies, and tokenizes carbon offsets. Contributors can mint NFTs representing verified carbon credits, making climate action transparent, traceable, and tradeable.</p>
+           <span class="model-type">LAYERS : 
+             
+              → Track Carbon Footprint data
+              → IoT / Web Sensors
+              → Geo Location Layers
+              → Document Uploads
+              → Certification of Carbon Credit Claims
+              → Steps Recording
+           </span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Refugee Identity Vault -->
+        <div class="model-card">
+          <div class="model-preview">
+            <img src="https://dummyimage.com/320x180/4a5d3a/ffffff?text=Refugee+Identity" alt="Refugee Identity" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Refugee Identity Vault</h3>
+            <p>A decentralized identity vault that provides secure, portable, and verifiable digital IDs for refugees and displaced persons. This vault ensures that individuals retain access to critical documents, even when uprooted from their homes.</p>
+             <span class="model-type">LAYERS : 
+             
+              → Facial Recognition
+              → Biometric identity verification
+              → Store IDs, and Certificates
+              → Voice Recognition
+              → Refugee Status Papers
+              → NFT Minting
+              → Issue tamper-proof identity credentials
+               </span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Cosmic & Time Capsule Vault -->
+        <div class="model-card">
+          <div class="model-preview">
+            <img src="https://dummyimage.com/320x180/8b7355/ffffff?text=Cosmic+Time+Capsule" alt="Cosmic Time Capsule" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Cosmic & Time Capsule Vault</h3>
+            <p>A legacy vault designed to store personal memories, life stories, and even experimental data for future generations — and potentially beyond Earth. Think of it as a digital time capsule, anchored in the blockchain.</p>
+             <span class="model-type">LAYERS : 
+             
+              → Steps / Health Data
+               → Capture lifestyle footprint
+              → Voice Recognition
+               → Spoken messages for descendants.
+              → Face/Video Uploads
+               → Personal video logs, family stories
+               → NFT Minting
+                → Each capsule minted as a unique eternal NFT
+             </span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Donor Fund Vault -->
+        <div class="model-card">
+          <div class="model-preview">
+            <img src="https://dummyimage.com/320x180/6a6a6a/ffffff?text=Donor+Fund" alt="Donor Fund" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Donor Fund Vault</h3>
+            <p>A transparent philanthropic vault for donations and grants. Donors can mint NFTs representing their contributions, while beneficiaries and communities can show verified impact.</p>
+          <span class="model-type">LAYERS : 
+             
+              → Voice & Video Updates
+            → Beneficiaries provide updates.
+              → Transaction Proofs (On-Chain)
+              → NFT receipts for donations
+              → Document Uploads
+            → Grant reports and accountability records
+            → NFT Minting
+          </span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Donor Fund Vault -->
+        <div class="model-card">
+          <div class="model-preview">
+            <img src="https://dummyimage.com/320x180/8b4513/ffffff?text=Donor+fund" alt="Donor Fund" referrerpolicy="no-referrer">
+            <div class="play-button">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="model-info">
+            <h3>Donor Fund Vault</h3>
+            <p>A transparent philanthropic vault for donations and grants. Donors can mint NFTs representing their contributions, while beneficiaries and communities can show verified impact.</p>
+         <span class="model-type">LAYERS : 
+             
+              → Facial Recognition
+              → Biometric Recognition
+              → Voice Recognition
+              → Document Uploads
+              → NFT Minting</span>
+          </div>
+          <div class="arrow-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M7 17l10-10M17 7H7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  
+ <section class="models-section">
+      <h2>Mint Your Tokens</h2>
+    <div class="mint-model-card">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1">
+          <input id="metaUri" placeholder="ipfs://..." class="input"/>
+          <div style="margin-top:8px;">
+            <button id="chooseFile" class="button">Choose file to upload</button>
+            <input id="fileInput" type="file" style="display:none" accept="image/*,audio/*,video/*"/>
+          </div>
+        </div>
+        <div style="width:220px">
+          <select id="vaultSelect" class="input"></select>
+          <input id="priceInput" placeholder="Price MATIC" class="input" style="margin-top:8px;"/>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="mintBtn" class="button">Mint NFT</button>
+        <span id="mintStatus" style="margin-left:12px">Ready</span>
+      </div>
+    </div>
+    <div id="recentGrid" class="grid" style="margin-top:12px;"></div>
+  </section>
+
+  <footer>© 2025 Soul Internet | Powered by IMPERIAL ENTERPRISE</footer>
+  
+  
+
+  <script src="script.js"></script>
+  
+<script>
+const VAULTS = [
+  {key:"CULTURE_LANG", title:"Cultural & Linguistic Vault"},
+  {key:"SMART_CARBON", title:"Smart Carbon Credits Vault"},
+  {key:"REFUGEE_ID", title:"Refugee Identity Vault"},
+  {key:"COSMIC_TIME", title:"Cosmic & Time Capsule Vault"},
+  {key:"DONOR_FUND", title:"Donor Fund Vault"}
+];
+
+const CONFIG_DEFAULT = { CONTRACT_ADDRESS: "0x4df55fad5af6ce9238d5d43f1589bc52cbea7b82", CONTRIBUTOR: "0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3", UPLOAD_API: "/api/upload" };
+let CONFIG = CONFIG_DEFAULT;
+
+async function loadConfig(){
+  try{
+    const r = await fetch('/config.json');
+    if(r.ok) CONFIG = await r.json();
+  }catch(e){}
+}
+loadConfig();
+
+const ABI = [
+  "function getQuotaInfo(bytes32) view returns (uint256,uint256,uint256,uint256,bool)",
+  "function publicMintEnabled(bytes32) view returns (bool)",
+  "function mintPublic(address, bytes32, string) payable returns (uint256)",
+  "event Minted(address indexed buyer,uint256 indexed tokenId,bytes32 tag,string uri,uint256 price)"
+];
+let provider, signer, contract, userAddress;
+function $(s){return document.querySelector(s);}
+
+function buildUI(){
+  const grid = $('#vaultGrid');
+  grid.innerHTML = '';
+  VAULTS.forEach(v=>{
+    const el = document.createElement('div');
+    el.className='card';
+    el.innerHTML = `<div style="font-weight:700">${v.title}</div><div style="margin-top:8px"><button onclick="openMint('${v.key}')" class="button">Mint</button></div>`;
+    grid.appendChild(el);
+    const opt = document.createElement('option'); opt.value=v.key; opt.textContent=v.title; $('#vaultSelect').appendChild(opt);
+  });
+}
+buildUI();
+
+$('#connectBtn').addEventListener('click', async ()=>{
+  if(window.ethereum){
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts',[]);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, ABI, signer);
+    $('#netName').textContent = 'Connected: ' + userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+    await refreshAllQuotas();
+  } else alert('Install MetaMask');
+});
+
+async function refreshAllQuotas(){
+  if(!contract) return;
+  for(const v of VAULTS){
+    try{
+      const tag = ethers.utils.formatBytes32String(v.key);
+      const info = await contract.getQuotaInfo(tag);
+      // show floor
+    }catch(e){}
+  }
+}
+
+function openMint(key){
+  $('#vaultSelect').value = key;
+  location.hash = '#mint';
+}
+  $('#chooseFile').addEventListener('click', ()=> $('#fileInput').click());
+$('#fileInput').addEventListener('change', async (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  $('#mintStatus').textContent = 'Uploading...';
+  try{
+    const uri = await uploadFile(f);
+    $('#metaUri').value = uri;
+    $('#mintStatus').textContent = 'Uploaded';
+  }catch(e){ $('#mintStatus').textContent = 'Upload failed'; alert(e.message); }
+});
+
+async function uploadFile(file){
+  const proxy = CONFIG.UPLOAD_API || '/api/upload';
+  const res = await fetch(proxy, { method:'POST', body:file });
+  if(!res.ok) throw new Error('Upload failed');
+  const j = await res.json();
+  if(!j?.value?.cid) throw new Error('No CID');
+  return 'ipfs://' + j.value.cid;
+}
+
+$('#mintBtn').addEventListener('click', async ()=>{
+  if(!contract) return alert('Connect wallet first');
+  const meta = $('#metaUri').value.trim();
+  if(!meta) return alert('Provide metadata ipfs:// URI');
+  const vault = $('#vaultSelect').value;
+  const price = $('#priceInput').value || '0.01';
+  const value = ethers.utils.parseEther(price.toString());
+  try{
+    $('#mintStatus').textContent = 'Sending tx...';
+    const tx = await contract.mintPublic(CONFIG.CONTRIBUTOR, ethers.utils.formatBytes32String(vault), meta, { value });
+    await tx.wait();
+    $('#mintStatus').textContent = 'Minted!';
+    alert('Mint success');
+  }catch(e){ $('#mintStatus').textContent='Failed'; alert(e.message || e); }
+});
+</script>
+</body>
+</html>
