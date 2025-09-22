@@ -239,7 +239,11 @@ async function startFaceScan() {
   status.innerText = "Loading models...";
   status.style.color = "#FF9800";
 
-  const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js/weights";
+
+
+
+  const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+  
 
 await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
