@@ -156,11 +156,200 @@ async function connectWallet() {
 
   <div class="container">
     <!-- Facial Recognition -->
-    <div class="card">
-      <h2>Facial Recognition</h2>
-      <video id="video" autoplay muted></video>
-      <button onclick="startFace()">Start Scan</button>
-    </div>
+    <!-- Facial Recognition -->
+<div class="card" style="padding:20px; text-align:center;">
+  <h2 style="margin-bottom:15px;">Facial Recognition</h2>
+
+  <!-- Video feed + overlay -->
+  <div style="position:relative; display:inline-block;">
+    <video id="video" width="320" height="240" autoplay muted playsinline style="border:1px solid #ccc; border-radius:8px;"></video>
+    <canvas id="overlay" width="320" height="240" style="position:absolute; left:0; top:0;"></canvas>
+  </div>
+
+  <!-- Control buttons -->
+  <div style="margin-top:15px;">
+    <button onclick="startFaceScan()" 
+      style="background:#4CAF50;color:white;padding:10px 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;margin-right:10px;">
+      Start Scan
+    </button>
+
+    <button onclick="stopFaceScan()" 
+      style="background:#f44336;color:white;padding:10px 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+      Stop Scan
+    </button>
+  </div>
+
+  <!-- Snapshot -->
+  <div style="margin-top:15px;">
+    <button onclick="captureSnapshot()" 
+      style="background:#2196F3;color:white;padding:10px 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+      Capture Snapshot
+    </button>
+    <canvas id="snapshotCanvas" width="320" height="240" style="display:none;margin-top:15px;border:1px solid #ccc;border-radius:8px;"></canvas>
+  </div>
+
+  <!-- Mint -->
+  <div style="margin-top:15px;">
+    <button onclick="mintSnapshotNFT()" 
+      style="background:#673AB7;color:white;padding:10px 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+      Mint Snapshot as NFT
+    </button>
+  </div>
+
+  <!-- NFT links -->
+  <div id="nftLink" style="margin-top:15px; display:none; font-size:14px;"></div>
+</div>
+
+<!-- Face API + Ethers.js -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<script>
+const NFT_STORAGE_KEY = "e45adb75.7c576e66ce6d497d853b61f4645f9039"; // your key
+const CONTRACT_ADDRESS = "0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3"; // your contract
+
+let scanInterval;
+let streamRef;
+let snapshotBlob;
+
+// Start Scan
+async function startFaceScan() {
+  await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+  await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+  await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const context = overlay.getContext('2d');
+
+  navigator.mediaDevices.getUserMedia({ video: {} })
+    .then(stream => {
+      streamRef = stream;
+      video.srcObject = stream;
+    })
+    .catch(err => alert("Camera access denied: " + err));
+
+  video.addEventListener('playing', () => {
+    scanInterval = setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+      context.clearRect(0, 0, overlay.width, overlay.height);
+
+      if (detections.length > 0) {
+        context.strokeStyle = "#4CAF50";
+        context.lineWidth = 2;
+        detections.forEach(det => {
+          const box = det.detection.box;
+          context.strokeRect(box.x, box.y, box.width, box.height);
+        });
+      }
+    }, 200);
+  });
+}
+
+// Stop Scan
+function stopFaceScan() {
+  if (scanInterval) clearInterval(scanInterval);
+  if (streamRef) streamRef.getTracks().forEach(track => track.stop());
+
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const context = overlay.getContext('2d');
+  video.srcObject = null;
+  context.clearRect(0, 0, overlay.width, overlay.height);
+}
+
+// Capture Snapshot
+function captureSnapshot() {
+  const video = document.getElementById('video');
+  const snapshotCanvas = document.getElementById('snapshotCanvas');
+  const ctx = snapshotCanvas.getContext('2d');
+
+  ctx.drawImage(video, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+  snapshotCanvas.style.display = "block";
+
+  snapshotCanvas.toBlob(blob => {
+    snapshotBlob = blob;
+    alert("Snapshot captured and ready to mint!");
+  }, 'image/png');
+}
+
+// Mint NFT
+async function mintSnapshotNFT() {
+  if (!snapshotBlob) {
+    alert("Please capture a snapshot first!");
+    return;
+  }
+
+  // Upload snapshot to IPFS
+  const formData = new FormData();
+  formData.append("file", snapshotBlob, "snapshot.png");
+
+  const uploadRes = await fetch("https://api.nft.storage/upload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${NFT_STORAGE_KEY}` },
+    body: formData,
+  });
+  const uploadData = await uploadRes.json();
+  const ipfsUrl = `ipfs://${uploadData.value.cid}`;
+
+  // Metadata
+  const metadata = {
+    name: "Cultural Vault Snapshot",
+    description: "Preserved cultural expression captured via Soul Internet Vault.",
+    image: ipfsUrl,
+  };
+
+  const metaRes = await fetch("https://api.nft.storage/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${NFT_STORAGE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(metadata),
+  });
+  const metaData = await metaRes.json();
+  const tokenURI = `ipfs://${metaData.value.cid}`;
+
+  // Connect MetaMask
+  if (!window.ethereum) {
+    alert("MetaMask not detected!");
+    return;
+  }
+
+  await window.ethereum.request({ method: "eth_requestAccounts" });
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+
+  const abi = [
+    "function mint(address to, string memory tokenURI) public returns (uint256)"
+  ];
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+  const userAddress = await signer.getAddress();
+
+  try {
+    const tx = await contract.mint(userAddress, tokenURI);
+    alert("Minting in progress... TX Hash: " + tx.hash);
+    await tx.wait();
+    alert("✅ NFT Minted Successfully!");
+
+    // Show links
+    const nftLinkDiv = document.getElementById("nftLink");
+    nftLinkDiv.style.display = "block";
+    nftLinkDiv.innerHTML = `
+      <p style="margin:8px 0;">🔗 View Transaction: 
+        <a href="https://etherscan.io/tx/${tx.hash}" target="_blank" style="color:#2196F3;">Etherscan</a>
+      </p>
+      <p style="margin:8px 0;">🌐 View Contract: 
+        <a href="https://opensea.io/assets/ethereum/${CONTRACT_ADDRESS}" target="_blank" style="color:#673AB7;">OpenSea</a>
+      </p>
+    `;
+  } catch (err) {
+    alert("❌ Error minting: " + err.message);
+  }
+}
+</script>
+
 
     <!-- Steps Recording -->
     <div class="card">
