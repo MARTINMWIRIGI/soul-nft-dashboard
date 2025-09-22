@@ -221,17 +221,7 @@ async function connectWallet() {
 }
 </style>
 
-    <!-- Facial Recognition Logic -->
-<script>
-window.onload = function() {
-  const status = document.getElementById('scan-status');
-  const video = document.getElementById('video');
-  const overlay = document.getElementById('overlay');
-  let faceDetected = false;
-
-  async function startFace() {
-    try {
-      status.innerText = "Loading models...";
+ 
 
 <!-- Face API + Ethers.js -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
@@ -307,52 +297,7 @@ async function startFaceScan() {
 //
   //
   //
-  const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   
-
-await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-
-  const video = document.getElementById('video');
-  const overlay = document.getElementById('overlay');
-  const context = overlay.getContext('2d');
-
-  navigator.mediaDevices.getUserMedia({ video: {} })
-    .then(stream => {
-      streamRef = stream;
-      video.srcObject = stream;
-      status.innerText = "Scanning...";
-      status.style.color = "#2196F3";
-    })
-    .catch(err => {
-      status.innerText = "Camera access denied";
-      status.style.color = "#f44336";
-    });
-
-  video.addEventListener('playing', () => {
-    if (scanInterval) clearInterval(scanInterval);
-    scanInterval = setInterval(async () => {
-      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks();
-      context.clearRect(0, 0, overlay.width, overlay.height);
-
-      if (detections.length > 0) {
-        context.strokeStyle = "#4CAF50";
-        context.lineWidth = 2;
-        detections.forEach(det => {
-          const box = det.detection.box;
-          context.strokeRect(box.x, box.y, box.width, box.height);
-        });
-        status.innerText = "Face Detected!";
-        status.style.color = "#4CAF50";
-      } else {
-        status.innerText = "No Face Found";
-        status.style.color = "#f44336";
-      }
-    }, 200);
-  });
-}
 
   //
   //
