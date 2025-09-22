@@ -156,6 +156,239 @@ async function connectWallet() {
 
   <div class="container">
     <!-- Facial Recognition -->
+
+<!-- Facial Recognition -->
+<div class="card" style="padding:20px; text-align:center;">
+  <h2 style="margin-bottom:10px;">🌍 Facial Recognition Layer</h2>
+  <p style="font-size:14px; color:#555; margin-bottom:15px;">
+    Capture cultural expressions and preserve them immutably on-chain.
+  </p>
+
+  <!-- Vault frame -->
+  <div style="position:relative; display:inline-block; border:4px solid;
+              border-image: linear-gradient(45deg, gold, orange, crimson) 1;
+              border-radius:12px; padding:4px; animation: glow 2s infinite alternate;">
+    <video id="video" width="320" height="240" autoplay muted playsinline 
+           style="border-radius:8px; display:block;"></video>
+    <canvas id="overlay" width="320" height="240" 
+            style="position:absolute; top:0; left:0; border-radius:8px; pointer-events:none;"></canvas>
+  </div>
+
+  <!-- Status banner -->
+  <div id="scanStatus" style="margin-top:12px; font-weight:bold; color:#2196F3;">
+    Ready to Scan
+  </div>
+
+  <!-- Controls -->
+  <div style="margin-top:15px;">
+    <button onclick="startFaceScan()" style="background:#4CAF50;color:white;padding:10px 20px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;">
+      Start Scan
+    </button>
+    <button onclick="stopFaceScan()" style="background:#f44336;color:white;padding:10px 20px;border:none;border-radius:6px;cursor:pointer;">
+      Stop Scan
+    </button>
+  </div>
+
+  <!-- Gallery -->
+  <h3 style="margin-top:20px; font-size:16px; color:#444;">📸 Captured Snapshots</h3>
+  <div id="gallery" style="margin-top:10px; display:flex; gap:10px; overflow-x:auto; padding:5px; border:1px dashed #aaa; border-radius:8px;">
+    <p id="noSnaps" style="color:#777; font-size:13px;">No snapshots yet</p>
+  </div>
+
+  <!-- Capture + Mint -->
+  <div style="margin-top:15px;">
+    <button onclick="captureSnapshot()" style="background:#2196F3;color:white;padding:10px 20px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;">
+      Capture Snapshot
+    </button>
+    <button onclick="mintSnapshotNFT()" style="background:#673AB7;color:white;padding:10px 20px;border:none;border-radius:6px;cursor:pointer;">
+      Mint Selected Snapshot as NFT
+    </button>
+  </div>
+
+  <!-- Minting Result -->
+  <div id="mintResult" style="margin-top:20px; display:none; border:1px solid #ccc; border-radius:8px; padding:15px; text-align:left;">
+    <h3 style="font-size:16px; margin-bottom:10px;">✅ NFT Minted</h3>
+    <img id="mintPreview" src="" alt="NFT Preview" style="width:100%; max-width:280px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
+    <p><a id="txLink" href="#" target="_blank" style="color:#2196F3;">View Transaction</a></p>
+    <p><a id="openseaLink" href="#" target="_blank" style="color:#673AB7;">View on OpenSea</a></p>
+  </div>
+</div>
+
+<style>
+@keyframes glow {
+  from { box-shadow: 0 0 10px gold; }
+  to { box-shadow: 0 0 20px orange; }
+}
+</style>
+
+<!-- Face API + Ethers.js -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<script>
+const NFT_STORAGE_KEY = "e45adb75.7c576e66ce6d497d853b61f4645f9039"; 
+const CONTRACT_ADDRESS = "0x8Cbe46A175E9CE3bB9FCF1F739F8C6b37d3308b3"; 
+
+let scanInterval;
+let streamRef;
+let selectedSnapshot = null;
+
+// Start Scan
+async function startFaceScan() {
+  const status = document.getElementById("scanStatus");
+  status.innerText = "Loading models...";
+  status.style.color = "#FF9800";
+
+  await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+  await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+  await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const context = overlay.getContext('2d');
+
+  navigator.mediaDevices.getUserMedia({ video: {} })
+    .then(stream => {
+      streamRef = stream;
+      video.srcObject = stream;
+      status.innerText = "Scanning...";
+      status.style.color = "#2196F3";
+    })
+    .catch(err => {
+      status.innerText = "Camera access denied";
+      status.style.color = "#f44336";
+    });
+
+  video.addEventListener('playing', () => {
+    if (scanInterval) clearInterval(scanInterval);
+    scanInterval = setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+      context.clearRect(0, 0, overlay.width, overlay.height);
+
+      if (detections.length > 0) {
+        context.strokeStyle = "#4CAF50";
+        context.lineWidth = 2;
+        detections.forEach(det => {
+          const box = det.detection.box;
+          context.strokeRect(box.x, box.y, box.width, box.height);
+        });
+        status.innerText = "Face Detected!";
+        status.style.color = "#4CAF50";
+      } else {
+        status.innerText = "No Face Found";
+        status.style.color = "#f44336";
+      }
+    }, 200);
+  });
+}
+
+// Stop Scan
+function stopFaceScan() {
+  if (scanInterval) clearInterval(scanInterval);
+  if (streamRef) streamRef.getTracks().forEach(track => track.stop());
+  document.getElementById("scanStatus").innerText = "Scan stopped";
+  document.getElementById("scanStatus").style.color = "#999";
+}
+
+// Capture Snapshot
+function captureSnapshot() {
+  const video = document.getElementById('video');
+  const canvas = document.createElement('canvas');
+  canvas.width = 160;
+  canvas.height = 120;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const gallery = document.getElementById("gallery");
+  document.getElementById("noSnaps").style.display = "none";
+
+  const img = document.createElement("img");
+  img.src = canvas.toDataURL("image/png");
+  img.style.width = "160px";
+  img.style.border = "2px solid transparent";
+  img.style.borderRadius = "6px";
+  img.style.cursor = "pointer";
+  img.onclick = () => {
+    // Select snapshot
+    Array.from(gallery.children).forEach(el => el.style.border="2px solid transparent");
+    img.style.border="2px solid #2196F3";
+    selectedSnapshot = img.src;
+  };
+
+  gallery.appendChild(img);
+
+  if (!selectedSnapshot) selectedSnapshot = img.src;
+}
+
+// Mint NFT
+async function mintSnapshotNFT() {
+  if (!selectedSnapshot) {
+    alert("Please capture and select a snapshot first!");
+    return;
+  }
+
+  const blob = await (await fetch(selectedSnapshot)).blob();
+
+  // Upload snapshot to IPFS
+  const formData = new FormData();
+  formData.append("file", blob, "snapshot.png");
+
+  const uploadRes = await fetch("https://api.nft.storage/upload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${NFT_STORAGE_KEY}` },
+    body: formData,
+  });
+  const uploadData = await uploadRes.json();
+  const ipfsUrl = `ipfs://${uploadData.value.cid}`;
+
+  // Metadata
+  const metadata = {
+    name: "Cultural Vault Snapshot",
+    description: "Preserved cultural expression captured via Soul Internet Vault.",
+    image: ipfsUrl,
+  };
+
+  const metaRes = await fetch("https://api.nft.storage/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${NFT_STORAGE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(metadata),
+  });
+  const metaData = await metaRes.json();
+  const tokenURI = `ipfs://${metaData.value.cid}`;
+
+  if (!window.ethereum) {
+    alert("MetaMask not detected!");
+    return;
+  }
+
+  await window.ethereum.request({ method: "eth_requestAccounts" });
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+
+  const abi = ["function mint(address to, string memory tokenURI) public returns (uint256)"];
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+  const userAddress = await signer.getAddress();
+
+  try {
+    const tx = await contract.mint(userAddress, tokenURI);
+    await tx.wait();
+
+    document.getElementById("mintResult").style.display = "block";
+    document.getElementById("mintPreview").src = selectedSnapshot;
+    document.getElementById("txLink").href = `https://etherscan.io/tx/${tx.hash}`;
+    document.getElementById("openseaLink").href = `https://opensea.io/assets/ethereum/${CONTRACT_ADDRESS}/`;
+  } catch (err) {
+    alert("❌ Error minting: " + err.message);
+  }
+}
+</script>
+    
+
+    
     <!-- Facial Recognition -->
 <div class="card" style="padding:20px; text-align:center;">
   <h2 style="margin-bottom:15px;">Facial Recognition</h2>
