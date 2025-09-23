@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cultural Vault — Facial Recognition Layer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#041025; color:#f1f5f9; font-family:sans-serif; }
+    .capsule { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:1rem; }
+    .scanner-line {
+      position:absolute; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,#7c3aed,#06b6d4);
+      animation:scan 3s linear infinite;
+      opacity:0.8;
+    }
+    @keyframes scan { 0% { top:0%; } 100% { top:100%; } }
+    .capsule-card {
+      background: linear-gradient(145deg, rgba(124,58,237,0.1), rgba(6,182,212,0.1));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 1rem;
+      box-shadow: 0 0 20px rgba(124,58,237,0.4), 0 0 40px rgba(6,182,212,0.2);
+    }
+    pre.json-preview {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: .5rem;
+      padding: 1rem;
+      font-size: .85rem;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6">
+
+  <main class="w-full max-w-4xl space-y-10">
+
+    <!-- 🌌 Intro / Ritual Gate -->
+    <div class="capsule p-6 text-center shadow-lg">
+      <h2 class="text-3xl font-bold">📸 Face the Archive</h2>
+      <br>
+      <p class="text-lg text-slate-300"style="font-weight:bold; font-style:italic; color:yellow;">Your face is more than appearance,<br> it is your witness, your proof, your story.</p>
+      <p class="mt-2 text-slate-400" style="color:white;">Step forward and open the vault. Your face is not just an image.
+It is living evidence that you walked upon this earth, but proof that you walked, you lived, you dreamed, you belonged to a place and a time. This scan will stamp your presence in eternity. Anchored to the blockchain, your image will serve as an eternal witness,
+a silent declaration that you were here, and you mattered.</p>
+      <br>
+         <p class="text-lg text-slate-300" style="color:yellow; font-style:italic;">Let yours be remembered.</p>
+      <div class="mt-4">
+        <button id="startBtn" class="px-6 py-3 bg-violet-600 hover:bg-violet-700 rounded-full font-semibold shadow-md transition">Begin Scan</button>
+      </div>
+    </div>
+
+    <!-- 📷 Live Scan Stage -->
+    <div class="capsule p-6 text-center hidden" id="cameraWrap">
+      <h2 class="text-3xl font-bold mb-1">The Gaze of the Vault</h2>
+      <br>
+      <p class="text-slate-300" style="color:yellow; font-style:italic; font-weight:bold;">Let the vault see you.</p>
+      <br>
+      <p class="text-slate-400 mb-4" style="color:white;">Sit steady. Breathe calmly. The scanner will capture your presence. Watch the glow line pass across your face — a ritual seal of memory.</p>
+      <div class="relative">
+        <video id="video" autoplay playsinline class="rounded-lg w-full shadow-md"></video>
+        <canvas id="canvas" class="hidden"></canvas>
+        <div class="scanner-line"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span id="countdown" class="text-4xl font-bold text-violet-400"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🧾 Capsule Preview -->
+    <div class="capsule p-6 hidden" id="previewWrap">
+      <h2 class="text-2xl font-bold mb-1">🧾 Your Eternal Capsule</h2>
+      <p class="text-slate-300">Not a picture — a testimony.</p>
+      <p class="text-slate-400 mb-4">Your face has been preserved. Add your name, your land, your time. This is how future generations will know you existed.</p>
+      <div class="capsule-card p-6 text-center">
+        <img id="previewImg" class="rounded-lg mx-auto mb-4 border border-slate-700 shadow-lg max-h-64" />
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-left">
+          <div>
+            <label class="text-xs text-slate-400">Name / ID</label>
+            <input id="nameInput" type="text" placeholder="Your Name" class="w-full rounded p-2 text-black" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Location</label>
+            <input id="locationInput" type="text" placeholder="Kenya, Nairobi" class="w-full rounded p-2 text-black" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Date</label>
+            <input id="dateInput" type="date" class="w-full rounded p-2 text-black" />
+          </div>
+        </div>
+        <div class="text-sm text-slate-400 mb-4">
+          <p><strong>Chain:</strong> Ethereum Mainnet (demo)</p>
+          <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Metadata Preview</h3>
+        <pre id="jsonPreview" class="json-preview">Waiting for data...</pre>
+        <div class="flex justify-center gap-4 mt-4">
+          <button id="rescanBtn" class="px-5 py-2 bg-slate-700 rounded-full">Re-scan</button>
+          <button id="mintBtn" class="px-5 py-2 bg-emerald-500 text-black rounded-full font-semibold shadow">Mint Face NFT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🎨 Capsule Enhancement (Optional Flair) -->
+    <div class="capsule p-6 text-center hidden" id="styleWrap">
+      <h2 class="text-2xl font-bold mb-1">🎨 Choose Your Preservation Style</h2>
+      <p class="text-slate-300">Every capsule carries a unique frame.</p>
+      <p class="text-slate-400 mb-4">Select the aura of your capsule. Ancient stone, golden lineage, or holographic future — how will your face echo across time?</p>
+      <select class="w-full max-w-sm mx-auto rounded p-2 text-black">
+        <option>Default Glow</option>
+        <option>Golden Frame</option>
+        <option>Holographic Aura</option>
+        <option>Stone-Etched Legacy</option>
+      </select>
+    </div>
+
+    <!-- ⚡ Minting Stage -->
+    <div class="capsule p-6 text-center hidden" id="mintWrap">
+      <h2 class="text-2xl font-bold mb-1">⚡ Seal the Capsule</h2>
+      <p class="text-slate-300">Once sealed, it cannot be undone.</p>
+      <p class="text-slate-400 mb-4">When you mint, this moment is etched forever. The vault closes around your capsule, locking it into the chain of memory.</p>
+      <p class="italic text-violet-400">✨ Sealing animation would shimmer here ✨</p>
+    </div>
+
+    <!-- 🖼 Minted Gallery -->
+    <div class="capsule p-6">
+      <h2 class="text-2xl font-bold mb-1">🖼 Vaulted Faces</h2>
+      <p class="text-slate-300">A living archive of witnesses.</p>
+      <p class="text-slate-400 mb-4">Here lie the sealed capsules of those who came before you. Every face, every story, an unbroken chain of memory.</p>
+      <div id="gallery" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+
+    <!-- 📜 Knowledge Footnote -->
+    <div class="capsule p-6 text-center">
+      <h2 class="text-xl font-bold">📜 Preservation Notes</h2>
+      <p class="text-slate-300">Understand the ritual you join.</p>
+      <p class="text-slate-400 mt-2">Your face remains yours. The vault only preserves a capsule — image + metadata — stored on decentralized networks like IPFS. Minting writes this proof on-chain. You decide what to share with eternity.</p>
+    </div>
+
+  </main>
+
+<script>
+const startBtn = document.getElementById('startBtn');
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const cameraWrap = document.getElementById('cameraWrap');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg = document.getElementById('previewImg');
+const countdown = document.getElementById('countdown');
+const rescanBtn = document.getElementById('rescanBtn');
+const mintBtn = document.getElementById('mintBtn');
+const dateInput = document.getElementById('dateInput');
+const nameInput = document.getElementById('nameInput');
+const locationInput = document.getElementById('locationInput');
+const timestamp = document.getElementById('timestamp');
+const jsonPreview = document.getElementById('jsonPreview');
+const gallery = document.getElementById('gallery');
+
+let stream;
+
+// Start camera
+startBtn.addEventListener('click', async () => {
+  cameraWrap.classList.remove('hidden');
+  previewWrap.classList.add('hidden');
+  startBtn.disabled = true;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video:true });
+    video.srcObject = stream;
+    startCountdown();
+  } catch (err) {
+    alert('Camera access denied or not available.');
+  }
+});
+
+// Countdown
+function startCountdown() {
+  let time = 3;
+  countdown.textContent = time;
+  const interval = setInterval(()=>{
+    time--;
+    countdown.textContent = time > 0 ? time : '';
+    if(time <= 0){
+      clearInterval(interval);
+      captureFrame();
+    }
+  },1000);
+}
+
+// Capture frame
+function captureFrame() {
+  const ctx = canvas.getContext('2d');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/png');
+  previewImg.src = dataUrl;
+  dateInput.value = new Date().toISOString().slice(0,10);
+  timestamp.textContent = new Date().toLocaleString();
+  previewWrap.classList.remove('hidden');
+  cameraWrap.classList.add('hidden');
+  stopCamera();
+  updateMetadata();
+}
+
+// Stop camera
+function stopCamera() {
+  if(stream){
+    stream.getTracks().forEach(track => track.stop());
+  }
+}
+
+// Update JSON preview
+function updateMetadata() {
+  const metadata = {
+    name: nameInput.value || "Face Capsule",
+    description: "Cultural Vault facial recognition capsule.",
+    attributes: [
+      { trait_type: "location", value: locationInput.value || "Unknown" },
+      { trait_type: "date", value: dateInput.value || new Date().toISOString().slice(0,10) },
+      { trait_type: "chain", value: "Ethereum Mainnet (demo)" },
+      { trait_type: "timestamp", value: new Date().toISOString() }
+    ],
+    image_file: "UPLOAD_IMAGE_TO_IPFS_AND_PASTE_URL_HERE"
+  };
+  jsonPreview.textContent = JSON.stringify(metadata, null, 2);
+  return { metadata, image: previewImg.src };
+}
+[nameInput, locationInput, dateInput].forEach(input => input.addEventListener('input', updateMetadata));
+
+// Re-scan
+rescanBtn.addEventListener('click', ()=>{
+  startBtn.disabled = false;
+  previewWrap.classList.add('hidden');
+});
+
+// Mint (demo)
+mintBtn.addEventListener('click', ()=>{
+  const { metadata, image } = updateMetadata();
+  const card = document.createElement('div');
+  card.className = "capsule-card p-4 text-center";
+  card.innerHTML = `
+    <img src="${image}" class="rounded-lg mb-3 border border-slate-700 shadow-lg max-h-40 mx-auto"/>
+    <h3 class="font-semibold">${metadata.name}</h3>
+    <p class="text-xs text-slate-400 mb-2">${metadata.description}</p>
+    <pre class="json-preview text-xs">${JSON.stringify(metadata, null, 2)}</pre>
+  `;
+  gallery.prepend(card);
+  alert('Demo: Face Capsule minted & added to gallery!');
+});
+</script>
+</body>
+</html>
