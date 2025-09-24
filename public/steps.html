@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cultural Vault — Steps Recording Layer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#041025; color:#f8fafc; font-family:sans-serif; }
+    .capsule { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:1rem; }
+    canvas { width:100%; height:100%; display:block; }
+    .footprint {
+      position:absolute;
+      font-size:2rem;
+      transform:translate(-50%,-50%);
+      animation:footPulse 1.6s ease-out forwards;
+      filter:drop-shadow(0 0 12px #7c3aed) drop-shadow(0 0 20px #06b6d4);
+    }
+    @keyframes footPulse {
+      0% { transform:translate(-50%,-50%) scale(0.5); opacity:0.9; }
+      70% { transform:translate(-50%,-50%) scale(1.2); opacity:0.6; }
+      100% { transform:translate(-50%,-50%) scale(1.6); opacity:0; }
+    }
+  </style>
+</head>
+<body class="p-6">
+
+<main class="max-w-3xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <section class="text-center">
+    <h1 class="text-3xl font-bold text-cyan-300">👣 Steps Into Eternity</h1>
+    <p class="text-slate-300 mt-2">Every step you take becomes a glowing trace — preserved as memory in the vault.</p>
+  </section>
+
+  <!-- Stage -->
+  <section class="capsule p-6 text-center relative overflow-hidden" style="height:420px;">
+    <canvas id="traceCanvas"></canvas>
+    <div id="overlay" class="absolute inset-0"></div>
+    <div class="absolute top-4 left-4 text-sm bg-black/40 px-3 py-1 rounded-full">Steps: <span id="stepCount">0</span></div>
+    <button id="startBtn" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cyan-600 px-6 py-2 rounded-full font-semibold shadow-lg">
+      Start Ritual
+    </button>
+  </section>
+
+  <!-- Export -->
+  <section id="exportSection" class="capsule p-6 hidden">
+    <h2 class="text-xl font-semibold mb-3">🧾 Step Capsule</h2>
+    <p class="text-slate-400 text-sm mb-3">Download your trace and metadata — ready to mint into the vault.</p>
+    <div class="flex gap-3 flex-wrap">
+      <button id="downloadTrace" class="bg-cyan-600 px-4 py-2 rounded-lg">⬇️ Download Trace</button>
+      <button id="downloadMeta" class="bg-violet-600 px-4 py-2 rounded-lg">⬇️ Download Metadata</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const canvas=document.getElementById("traceCanvas"),ctx=canvas.getContext("2d");
+canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight;
+const overlay=document.getElementById("overlay");
+let stepCount=0,lastStep=0,stepThreshold=12,pathPoints=[];
+
+function spawnFootprint(x,y){
+  const span=document.createElement("span");
+  span.className="footprint"; span.textContent="👣";
+  span.style.left=x+"px"; span.style.top=y+"px";
+  overlay.appendChild(span); setTimeout(()=>span.remove(),1600);
+}
+function drawPath(x,y){
+  pathPoints.push({x,y});
+  ctx.strokeStyle="rgba(124,58,237,0.9)";
+  ctx.lineWidth=3; ctx.shadowBlur=15; ctx.shadowColor="#06b6d4";
+  ctx.beginPath();
+  pathPoints.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+  ctx.stroke();
+}
+
+function startRitual(){
+  stepCount=0; pathPoints=[]; ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById("stepCount").textContent=stepCount;
+  if(typeof DeviceMotionEvent.requestPermission==="function"){
+    DeviceMotionEvent.requestPermission().then(res=>{
+      if(res==="granted") window.addEventListener("devicemotion",onMotion);
+    });
+  } else { window.addEventListener("devicemotion",onMotion); }
+  document.getElementById("exportSection").classList.remove("hidden");
+}
+function onMotion(e){
+  const acc=e.accelerationIncludingGravity;
+  if(!acc) return;
+  const total=Math.sqrt(acc.x*acc.x+acc.y*acc.y+acc.z*acc.z);
+  if(total>stepThreshold && Date.now()-lastStep>600){
+    lastStep=Date.now(); stepCount++; document.getElementById("stepCount").textContent=stepCount;
+    const x=Math.random()*canvas.width, y=Math.random()*canvas.height;
+    spawnFootprint(x,y); drawPath(x,y);
+  }
+}
+document.getElementById("startBtn").onclick=startRitual;
+
+// Downloads
+document.getElementById("downloadTrace").onclick=()=>{
+  const url=canvas.toDataURL("image/png"); dl(url,"steps-trace.png");
+};
+document.getElementById("downloadMeta").onclick=()=>{
+  const metadata={
+    type:"Step Counter Capsule",
+    date:new Date().toISOString().slice(0,10),
+    steps:stepCount,
+    description:"Steps preserved in the cultural vault."
+  };
+  const blob=new Blob([JSON.stringify(metadata,null,2)],{type:"application/json"});
+  dl(URL.createObjectURL(blob),"steps-metadata.json");
+};
+function dl(url,name){ const a=document.createElement("a"); a.href=url;a.download=name;a.click(); }
+</script>
+</body>
+</html>
