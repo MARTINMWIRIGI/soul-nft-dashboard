@@ -327,11 +327,99 @@ async function connectWallet() {
 
 
     <!-- Steps Recording -->
-    <div class="card">
-      <h2>Steps Recording</h2>
-      <button onclick="startVideoRecord()">Record Dance</button>
-      <video id="danceVideo" controls></video>
-    </div>
+    <!-- Steps Recording Intro -->
+<section style="
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:1rem;
+  padding:2rem;
+  margin:2rem auto;
+  max-width:900px;
+  text-align:center;
+  box-shadow:0 0 25px rgba(124,58,237,0.25), 0 0 45px rgba(6,182,212,0.15);
+  position:relative;
+  overflow:hidden;
+">
+  <h2 style="font-size:2rem; font-weight:700; color:#22d3ee; margin-bottom:0.5rem;">
+    👣 Steps Into Eternity
+  </h2>
+  <p style="font-size:1.2rem; color:#a5b4fc; font-weight:500; margin-bottom:1.5rem;">
+    Every step is a story — let the vault remember yours.
+  </p>
+
+  <!-- Animated footsteps row + glowing path -->
+  <div style="display:flex;justify-content:center;align-items:center;gap:2rem;position:relative;margin:1.5rem 0;">
+    <!-- glowing line between footsteps -->
+    <div class="footstep-path"></div>
+
+    <span class="footstep">👣</span>
+    <span class="footstep delay">👣</span>
+  </div>
+
+  <p style="color:#cbd5e1; font-size:1rem; line-height:1.6; max-width:700px; margin:0 auto 1.5rem;">
+    Dances, rituals, and footsteps are not just movement — they are memory encoded in rhythm.  
+    Each step you take becomes a glowing trace, sealed inside the vault as cultural choreography.  
+    What begins as motion will echo as <span style="color:#38bdf8;font-weight:600;">immortal rhythm</span>, preserved forever on-chain.
+  </p>
+
+  <a href="steps.html" style="
+    display:inline-block;
+    background:linear-gradient(90deg,#06b6d4,#3b82f6);
+    color:#fff;
+    padding:0.75rem 2rem;
+    border-radius:9999px;
+    font-weight:600;
+    text-decoration:none;
+    box-shadow:0 0 20px rgba(6,182,212,0.5), 0 0 30px rgba(59,130,246,0.3);
+    transition:all 0.3s ease;
+    animation:buttonPulse 2s infinite;
+  " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+    Enter the Steps Vault
+  </a>
+</section>
+
+<!-- Inline animations -->
+<style>
+  .footstep {
+    font-size:3rem;
+    display:inline-block;
+    animation: stepPulse 2s infinite;
+    z-index:2;
+  }
+  .footstep.delay {
+    animation-delay:1s;
+  }
+
+  /* glowing path line */
+  .footstep-path {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:140px; /* distance between footsteps */
+    height:4px;
+    background:linear-gradient(90deg, rgba(124,58,237,0.8), rgba(6,182,212,0.8));
+    border-radius:2px;
+    box-shadow:0 0 20px rgba(124,58,237,0.6), 0 0 30px rgba(6,182,212,0.5);
+    animation:pathGlow 2s infinite alternate;
+    z-index:1;
+  }
+
+  @keyframes stepPulse {
+    0%,100% { transform: scale(0.8); opacity:0.6; }
+    40% { transform: scale(1.2); opacity:1; }
+    70% { transform: scale(1); opacity:0.8; }
+  }
+  @keyframes buttonPulse {
+    0%,100% { transform: scale(1); box-shadow:0 0 15px rgba(6,182,212,0.5), 0 0 30px rgba(59,130,246,0.4); }
+    40% { transform: scale(1.05); box-shadow:0 0 25px rgba(6,182,212,0.7), 0 0 50px rgba(59,130,246,0.6); }
+    70% { transform: scale(1.02); box-shadow:0 0 18px rgba(6,182,212,0.6), 0 0 35px rgba(59,130,246,0.5); }
+  }
+  @keyframes pathGlow {
+    from { opacity:0.5; }
+    to { opacity:1; }
+  }
+</style>
 
 
 
