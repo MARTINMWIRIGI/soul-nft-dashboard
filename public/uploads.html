@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cultural Vault — Document Upload Layer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#041025; color:#f8fafc; font-family:sans-serif; }
+    .capsule { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:1rem; }
+    .dropzone {
+      border:2px dashed rgba(255,255,255,0.2);
+      border-radius:1rem;
+      padding:2rem;
+      text-align:center;
+      transition:all 0.3s ease;
+    }
+    .dropzone.dragover {
+      border-color:#38bdf8;
+      background:rgba(56,189,248,0.05);
+      box-shadow:0 0 20px rgba(56,189,248,0.5);
+    }
+    .gallery-card {
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:0.75rem;
+      padding:1rem;
+      box-shadow:0 0 20px rgba(124,58,237,0.25);
+      display:flex;
+      gap:0.75rem;
+      align-items:flex-start;
+    }
+    .thumb {
+      width:48px; height:48px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,0.08); border-radius:0.5rem;
+      overflow:hidden; font-size:1.5rem;
+    }
+    .thumb img { width:100%; height:100%; object-fit:cover; }
+    /* Modal */
+    .modal {
+      position:fixed; inset:0; background:rgba(0,0,0,0.8);
+      display:flex; align-items:center; justify-content:center;
+      z-index:50; padding:2rem;
+    }
+    .modal-content {
+      background:#0f172a; padding:1rem; border-radius:0.75rem; max-width:90%; max-height:90%; overflow:auto;
+    }
+    .modal-content img, .modal-content video, .modal-content audio, .modal-content iframe {
+      max-width:100%; max-height:80vh; border-radius:0.5rem;
+    }
+    .close-btn {
+      position:absolute; top:1rem; right:1rem;
+      background:#ef4444; color:white; padding:0.5rem 1rem;
+      border-radius:0.5rem; cursor:pointer;
+    }
+  </style>
+</head>
+<body class="p-6">
+
+<main class="max-w-4xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <section class="text-center">
+    <h1 class="text-3xl font-bold text-violet-300">📜 Eternal Documents</h1>
+    <p class="text-slate-300 mt-2">Manuscripts, agreements, rituals, and histories — let your records live forever in the vault.</p>
+  </section>
+
+  <!-- Upload Zone -->
+  <section class="capsule p-6">
+    <div id="dropzone" class="dropzone">
+      <p class="text-lg mb-2">⬆️ Drag & Drop or Click to Upload</p>
+      <p class="text-slate-400 text-sm">Supported: PDF, DOCX, TXT, PNG, JPG, MP3, MP4</p>
+      <input type="file" id="fileInput" hidden/>
+      <button onclick="document.getElementById('fileInput').click()" class="mt-3 bg-cyan-600 px-4 py-2 rounded-lg">Choose File</button>
+    </div>
+    <div id="fileInfo" class="mt-4 hidden">
+      <h3 class="font-semibold">📂 File Preview</h3>
+      <p id="fileName" class="text-slate-300"></p>
+      <p id="fileSize" class="text-slate-400 text-sm"></p>
+      <p id="fileType" class="text-slate-400 text-sm"></p>
+    </div>
+  </section>
+
+  <!-- Metadata -->
+  <section id="metaSection" class="capsule p-6 hidden">
+    <h2 class="text-xl font-semibold">🧾 Document Metadata</h2>
+    <div class="grid md:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label class="text-sm text-slate-300">Language / Dialect</label>
+        <input id="metaLang" class="w-full rounded p-2 text-black" placeholder="Swahili / Kikuyu"/>
+      </div>
+      <div>
+        <label class="text-sm text-slate-300">Origin / Location</label>
+        <input id="metaLocation" class="w-full rounded p-2 text-black" placeholder="Kenya, Nairobi"/>
+      </div>
+      <div>
+        <label class="text-sm text-slate-300">Era / Date</label>
+        <input id="metaDate" type="date" class="w-full rounded p-2 text-black"/>
+      </div>
+      <div>
+        <label class="text-sm text-slate-300">Description</label>
+        <textarea id="metaDesc" class="w-full rounded p-2 text-black" rows="2" placeholder="Describe the cultural importance..."></textarea>
+      </div>
+    </div>
+    <button id="mintBtn" class="mt-4 bg-violet-600 px-6 py-2 rounded-lg">🪙 Mint Document Capsule (demo)</button>
+  </section>
+
+  <!-- Gallery -->
+  <section id="gallerySection" class="capsule p-6 hidden">
+    <h2 class="text-2xl font-bold mb-4 text-indigo-300">🖼 Vaulted Documents</h2>
+    <div id="gallery" class="grid md:grid-cols-2 gap-4"></div>
+  </section>
+
+</main>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content relative">
+    <button class="close-btn" onclick="closeModal()">Close</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const dropzone=document.getElementById("dropzone");
+const fileInput=document.getElementById("fileInput");
+const fileInfo=document.getElementById("fileInfo");
+const fileName=document.getElementById("fileName");
+const fileSize=document.getElementById("fileSize");
+const fileType=document.getElementById("fileType");
+const metaSection=document.getElementById("metaSection");
+const gallery=document.getElementById("gallery");
+const gallerySection=document.getElementById("gallerySection");
+const modal=document.getElementById("modal");
+const modalBody=document.getElementById("modalBody");
+let selectedFile=null;
+
+dropzone.addEventListener("dragover",(e)=>{e.preventDefault(); dropzone.classList.add("dragover");});
+dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("dragover"));
+dropzone.addEventListener("drop",(e)=>{
+  e.preventDefault(); dropzone.classList.remove("dragover");
+  handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change",(e)=>handleFile(e.target.files[0]));
+
+function handleFile(file){
+  if(!file) return;
+  selectedFile=file;
+  fileInfo.classList.remove("hidden");
+  fileName.textContent="Name: "+file.name;
+  fileSize.textContent="Size: "+(file.size/1024).toFixed(1)+" KB";
+  fileType.textContent="Type: "+file.type;
+  metaSection.classList.remove("hidden");
+}
+
+document.getElementById("mintBtn").onclick=()=>{
+  if(!selectedFile) return alert("No file uploaded.");
+  const metadata={
+    name:selectedFile.name,
+    size:selectedFile.size,
+    type:selectedFile.type,
+    language:document.getElementById("metaLang").value,
+    location:document.getElementById("metaLocation").value,
+    date:document.getElementById("metaDate").value,
+    description:document.getElementById("metaDesc").value
+  };
+
+  // icon / preview selection
+  let thumbHTML="📦"; let previewHTML="";
+  const url=URL.createObjectURL(selectedFile);
+  if(selectedFile.type.startsWith("image/")){
+    thumbHTML=`<img src="${url}" alt="img"/>`;
+    previewHTML=`<img src="${url}" alt="preview"/>`;
+  } else if(selectedFile.type.startsWith("audio/")){
+    thumbHTML="🎶";
+    previewHTML=`<audio controls src="${url}"></audio>`;
+  } else if(selectedFile.type.startsWith("video/")){
+    thumbHTML="🎥";
+    previewHTML=`<video controls src="${url}"></video>`;
+  } else if(selectedFile.type.includes("pdf") || selectedFile.type.includes("text")){
+    thumbHTML="📄";
+    previewHTML=`<iframe src="${url}" width="100%" height="600"></iframe>`;
+  }
+
+  const card=document.createElement("div"); card.className="gallery-card";
+  card.innerHTML=`
+    <div class="thumb">${thumbHTML}</div>
+    <div class="flex-1">
+      <h3 class="font-semibold">${metadata.name}</h3>
+      <p class="text-sm text-slate-400">${metadata.language||"Unknown Language"} • ${metadata.location||"Unknown"}</p>
+      <p class="text-xs text-slate-500">Size: ${(metadata.size/1024).toFixed(1)} KB</p>
+      <div class="mt-2 flex gap-2 text-sm">
+        <a href="#" onclick="openModal(\`${previewHTML}\`);return false;" class="underline">Preview</a>
+        <a href="data:application/json,${encodeURIComponent(JSON.stringify(metadata,null,2))}" download="document-metadata.json" class="underline">Metadata</a>
+      </div>
+    </div>
+  `;
+  gallery.prepend(card);
+  gallerySection.classList.remove("hidden");
+  alert("Demo: Document Capsule minted.");
+};
+
+// Modal functions
+function openModal(content){
+  modalBody.innerHTML=content;
+  modal.classList.remove("hidden");
+}
+function closeModal(){
+  modal.classList.add("hidden");
+  modalBody.innerHTML="";
+}
+</script>
+</body>
+</html>
