@@ -1,0 +1,15 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "SOUL INTERNET",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "MultiSoul",
+  "start_url": "https://soul-nft-dashboard-upqy.vercel.app/",
+  "theme_color": "#1900ff",
+  "description": "Unlock your MultiSoul",
+  "id": "SOUL INTERNET",
+  "lang": "en",
+  "categories": ["finance"]
+}
